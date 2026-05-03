@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="E-LearningPlatform.Application/E-LearningPlatform.Application.csproj" />
+  <Project Path="E-LearningPlatform.Domain/E-LearningPlatform.Domain.csproj" />
+  <Project Path="E-LearningPlatform.Infrastructure/E-LearningPlatform.Infrastructure.csproj" />
+  <Project Path="E-learnPlatform.API/E-learnPlatform.API.csproj" />
+</Solution>
