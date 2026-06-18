@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using E_LearningPlatform.Application.Common;
 using E_LearningPlatform.Application.DTOs.Lesson;
 using E_LearningPlatform.Application.Exceptions;
 using E_LearningPlatform.Application.Interfaces.External;
@@ -8,6 +9,7 @@ using E_LearningPlatform.Domain.Entities;
 using E_LearningPlatform.Domain.Enums;
 using E_LearningPlatform.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Client;
 
 namespace E_LearningPlatform.Infrastructure.Services
 {
@@ -18,25 +20,27 @@ namespace E_LearningPlatform.Infrastructure.Services
         private readonly ICloudinaryService _cloudinaryService;
         private readonly IMapper _mapper;
         private readonly ICurrentUserService _currentUserService;
-        public LessonService(IUnitOfWork unitOfWork,
+        private readonly ICourseAuthorizationService _courseAuthorizationService;
+        public LessonService (IUnitOfWork unitOfWork,
             IMapper mapper,
             ICloudinaryService cloudinaryService,
-            ICurrentUserService currentUserService)
+            ICurrentUserService currentUserService,
+            ICourseAuthorizationService courseAuthorizationService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _cloudinaryService = cloudinaryService;
             _currentUserService = currentUserService;
+            _courseAuthorizationService = courseAuthorizationService;
         }
 
-        public async Task<LessonCreatedResponseDto> AddLessonAsync(AddLessonRequestDto request)
+        public async Task<LessonCreatedResponseDto> AddLessonAsync (AddLessonRequestDto request)
         {
             var section = await _unitOfWork.Sections.GetByIdAsync(request.SectionId) ??
                 throw new NotFoundException($"Section with ID {request.SectionId} not found.");
             var course = await _unitOfWork.Courses.GetByIdAsync(section.CourseId) ??
                 throw new NotFoundException($"Course with ID {section.CourseId} not found.");
-            if (course.InstructorId != _currentUserService.UserId)
-                throw new ForbiddenException("You are not allowed to modify this course.");
+            await _courseAuthorizationService.EnsureInstructorOwnsCourseAsync(course.Id);
             var lessonCount = await _unitOfWork.Lessons
                    .Query()
                    .Where(l => l.SectionId == request.SectionId)
@@ -79,7 +83,7 @@ MediaType.Video,
         }
 
 
-        public async Task DeleteLessonAsync(int lessonId, int sectionId)
+        public async Task DeleteLessonAsync (int lessonId, int sectionId)
         {
             if (lessonId <= 0)
                 throw new BadRequestException("Invalid lesson id.");
@@ -105,8 +109,7 @@ MediaType.Video,
             if (course == null)
                 throw new NotFoundException("Course not found.");
 
-            if (course.InstructorId != _currentUserService.UserId)
-                throw new ForbiddenException("You are not allowed to modify this course.");
+            await _courseAuthorizationService.EnsureInstructorOwnsCourseAsync(course.Id);
 
             var deletedOrder = lesson.Order;
 
@@ -138,7 +141,7 @@ MediaType.Video,
 
             await _unitOfWork.SaveChangesAsync();
         }
-        public async Task<LessonCreatedResponseDto> UpdateLessonAsync(int lessonId, AddLessonRequestDto request)
+        public async Task<LessonCreatedResponseDto> UpdateLessonAsync (int lessonId, AddLessonRequestDto request)
         {
             if (lessonId <= 0)
                 throw new ArgumentException("Invalid lesson ID.", nameof(lessonId));
@@ -154,9 +157,7 @@ MediaType.Video,
 
             var course = await _unitOfWork.Courses.GetByIdAsync(section.CourseId) ??
                  throw new NotFoundException($"Course with ID {section.CourseId} not found.");
-            if (course.InstructorId != _currentUserService.UserId)
-                throw new ForbiddenException("You are not allowed to modify this course.");
-
+            await _courseAuthorizationService.EnsureInstructorOwnsCourseAsync(course.Id);
 
             lesson.SetTitle(request.Title);
 
@@ -207,7 +208,7 @@ MediaType.Video,
 
             return _mapper.Map<LessonCreatedResponseDto>(lesson);
         }
-        private static MediaCategory MapToMediaCategory(LessonContentType contentType)
+        private static MediaCategory MapToMediaCategory (LessonContentType contentType)
         {
             return contentType switch
             {
@@ -225,7 +226,7 @@ MediaType.Video,
 
         }
 
-        public async Task ReorderLessonsAsync(int sectionId, List<int> orderedLessonIds)
+        public async Task ReorderLessonsAsync (int sectionId, List<int> orderedLessonIds)
         {
             if (sectionId <= 0)
                 throw new BadRequestException("Invalid section id.");
@@ -236,8 +237,7 @@ MediaType.Video,
                 throw new NotFoundException($"Section with ID {sectionId} not found.");
             var course = await _unitOfWork.Courses.GetByIdAsync(section.CourseId) ??
             throw new NotFoundException($"Course with ID {section.CourseId} not found.");
-            if (course.InstructorId != _currentUserService.UserId)
-                throw new ForbiddenException("You are not allowed to modify this course.");
+            await _courseAuthorizationService.EnsureInstructorOwnsCourseAsync(course.Id);
             var lessons = await _unitOfWork.Lessons
                .Query()
                .Where(l => l.SectionId == sectionId)
@@ -255,6 +255,41 @@ MediaType.Video,
             }
             await _unitOfWork.SaveChangesAsync();
 
+        }
+
+        public Task<LessonDetailsResponseDto> GetLessonByIdAsync (int lessonId)
+        {
+            if (lessonId <= 0)
+                throw new BadRequestException("Invalid lesson id.");
+            var lesson = _unitOfWork.Lessons.GetByIdAsync(lessonId) ??
+                throw new NotFoundException($"Lesson with ID {lessonId} not found.");
+            return Task.FromResult(_mapper.Map<LessonDetailsResponseDto>(lesson));
+        }
+
+        public Task<PagedResult<LessonDetailsResponseDto>> GetLessonsBySectionIdAsync (int sectionId, PagedRequest PagedRequest)
+        {
+            if (sectionId <= 0)
+                throw new BadRequestException("Invalid section id.");
+            var section = _unitOfWork.Sections.GetByIdAsync(sectionId) ??
+                throw new NotFoundException($"Section with ID {sectionId} not found.");
+            var lessonsQuery = _unitOfWork.Lessons
+                .Query()
+                .Where(l => l.SectionId == sectionId)
+                .OrderBy(l => l.Order);
+            var totalCount = lessonsQuery.Count();
+            var lessons = lessonsQuery
+                .Skip((PagedRequest.PageNumber - 1) * PagedRequest.PageSize)
+                .Take(PagedRequest.PageSize)
+                .ToList();
+            var lessonDtos = _mapper.Map<List<LessonDetailsResponseDto>>(lessons);
+            var pagedResult = new PagedResult<LessonDetailsResponseDto>
+            {
+                Items = lessonDtos,
+                TotalCount = totalCount,
+                PageNumber = PagedRequest.PageNumber,
+                PageSize = PagedRequest.PageSize
+            };
+            return Task.FromResult(pagedResult);
         }
     }
 }

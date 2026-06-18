@@ -1,4 +1,5 @@
-﻿using E_LearningPlatform.Application.DTOs.Course;
+﻿using E_LearningPlatform.Application.Common;
+using E_LearningPlatform.Application.DTOs.Course;
 using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
@@ -10,6 +11,7 @@ namespace E_LearningPlatform.Application.Interfaces.Services
     {
 
         Task<CourseCreatedResponseDto> AddCourseAsync(AddCourseRequestDto request);
+        Task<PagedResult<CourseCreatedResponseDto>> GetCoursesAsync(int pageNumber, int pageSize, CancellationToken cancellationToken);
         Task<CourseCreatedResponseDto> GetCourseByIdAsync(int courseId);
         Task<CourseCreatedResponseDto> UpdateCourseAsync(int courseId, AddCourseRequestDto request);
 

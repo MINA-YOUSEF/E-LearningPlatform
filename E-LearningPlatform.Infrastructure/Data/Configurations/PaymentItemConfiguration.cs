@@ -13,10 +13,10 @@ namespace E_LearningPlatform.Infrastructure.Data.Configurations
             builder.HasIndex(pi => pi.PaymentId);
             builder.HasIndex(pi => pi.CourseId);
 
-            builder.HasOne(pi => pi.Payment)
-                .WithMany(p => p.Items)
-                .HasForeignKey(pi => pi.PaymentId)
-                .OnDelete(DeleteBehavior.Cascade);
+            //builder.HasOne(pi => pi.Payment)
+            //    .WithMany(p => p.Items)
+            //    .HasForeignKey(pi => pi.PaymentId)
+            //    .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasOne(pi => pi.Course)
                 .WithMany(c => c.PaymentItems)

@@ -10,11 +10,9 @@ namespace E_LearningPlatform.Domain.Entities
         private readonly List<OrderItem> _items = new();
         private Order() { }
 
-        public Order(int userId, Money total, Money tax)
+        public Order(int userId)
         {
             UserId = userId;
-            Total = total;
-            Tax = tax;
             Status = OrderStatus.Pending;
         }
 
@@ -26,12 +24,33 @@ namespace E_LearningPlatform.Domain.Entities
         public Payment? Payment { get; private set; }
         public IReadOnlyCollection<OrderItem> Items => _items.AsReadOnly();
 
-        public void MarkPaid(int paymentId)
+        public void MarkPaid()
         {
-            PaymentId = paymentId;
+            if (Status == OrderStatus.Paid)
+            {
+                throw new InvalidOperationException(
+                    "Order already paid.");
+            }
+
             Status = OrderStatus.Paid;
         }
-
+        public void AddItem(OrderItem item)
+        {
+            _items.Add(item);
+        }
         public void Cancel() => Status = OrderStatus.Cancelled;
+
+        public void CalculateTotal()
+        {
+            if (!Items.Any()) throw new InvalidOperationException("Order must contain items.") ;
+            Money total= _items.First().Price;
+            foreach (var item in _items.Skip(1))
+            {
+                total = total.Add(item.Price);
+            }
+            Total = total;
+
+
+        }
     }
 }

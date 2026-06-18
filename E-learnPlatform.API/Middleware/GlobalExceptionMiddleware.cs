@@ -10,13 +10,13 @@ namespace E_learnPlatform.API.Middleware
         private readonly RequestDelegate _next;
         private readonly ILogger<GlobalExceptionMiddleware> _logger;
 
-        public GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExceptionMiddleware> logger)
+        public GlobalExceptionMiddleware (RequestDelegate next, ILogger<GlobalExceptionMiddleware> logger)
         {
             _next = next;
             _logger = logger;
         }
 
-        public async Task InvokeAsync(HttpContext context)
+        public async Task InvokeAsync (HttpContext context)
         {
             try
             {
@@ -28,10 +28,12 @@ namespace E_learnPlatform.API.Middleware
             }
         }
 
-        private async Task HandleExceptionAsync(HttpContext context, Exception exception)
+        private async Task HandleExceptionAsync (HttpContext context, Exception exception)
         {
             _logger.LogError(exception, "Unhandled error occurred while processing request.");
-
+            _logger.LogError(
+    exception,
+    exception.Message);
             var (statusCode, title, errors) = exception switch
             {
                 ValidationException validationException =>

@@ -9,7 +9,8 @@ namespace E_LearningPlatform.Application.Interfaces.Services
         int? UserId { get; }
         string Email { get; }
         string Role { get; }
+        string FullName { get; }
         bool IsAuthenticated { get; }
-        bool IsInRole(string role);
+        bool IsInRole (string role);
     }
 }

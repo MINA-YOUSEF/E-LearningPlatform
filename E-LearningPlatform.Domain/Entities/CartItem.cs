@@ -2,11 +2,10 @@
 {
     public class CartItem : BaseEntity
     {
-        private CartItem() { }
+        private CartItem () { }
 
-        public CartItem(int cartId, int courseId, decimal price)
+        public CartItem (int courseId, decimal price)
         {
-            CartId = cartId;
             CourseId = courseId;
             Price = price;
         }

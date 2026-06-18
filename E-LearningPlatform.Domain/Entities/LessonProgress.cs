@@ -21,7 +21,10 @@
         public void MarkProgress(int watchedSeconds, bool completed = false)
         {
             if (watchedSeconds < 0) throw new ArgumentOutOfRangeException(nameof(watchedSeconds));
+          
+            if (watchedSeconds > WatchedSeconds)
             WatchedSeconds = watchedSeconds;
+
             IsCompleted = completed || IsCompleted;
             Touch(UserId);
         }

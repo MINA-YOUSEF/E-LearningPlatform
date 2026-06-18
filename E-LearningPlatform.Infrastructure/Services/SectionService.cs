@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using E_LearningPlatform.Application.Common;
 using E_LearningPlatform.Application.DTOs.Section;
 using E_LearningPlatform.Application.Exceptions;
 using E_LearningPlatform.Application.Interfaces.External;
@@ -15,23 +16,25 @@ namespace E_LearningPlatform.Infrastructure.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ICurrentUserService _currentUserService;
-        public SectionService(IUnitOfWork unitOfWork,
+        private readonly ICourseAuthorizationService _courseAuthorizationService;
+        public SectionService (IUnitOfWork unitOfWork,
             IMapper mapper,
-            ICurrentUserService currentUserService)
+            ICurrentUserService currentUserService,
+            ICourseAuthorizationService courseAuthorizationService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _currentUserService = currentUserService;
+            _courseAuthorizationService = courseAuthorizationService;
         }
-        public async Task<SectionCreatedResponseDto> AddSectionAsync(AddSectionRequestDto request)
+        public async Task<SectionCreatedResponseDto> AddSectionAsync (AddSectionRequestDto request)
         {
             var course = await _unitOfWork.Courses.GetByIdAsync(request.CourseId);
 
             if (course == null)
                 throw new NotFoundException("Course not found.");
 
-            if (course.InstructorId != _currentUserService.UserId)
-                throw new ForbiddenException("You are not allowed to modify this course.");
+            await _courseAuthorizationService.EnsureInstructorOwnsCourseAsync(course.Id);
 
             var sectionCount = await _unitOfWork.Sections
                 .Query()
@@ -53,7 +56,7 @@ namespace E_LearningPlatform.Infrastructure.Services
             return _mapper.Map<SectionCreatedResponseDto>(section);
         }
 
-        public async Task DeleteSectionAsync(int sectionId, int courseId)
+        public async Task DeleteSectionAsync (int sectionId, int courseId)
         {
             if (sectionId <= 0) throw new BadRequestException("Invalid section ID.");
             if (courseId <= 0) throw new BadRequestException("Invalid course ID.");
@@ -65,8 +68,7 @@ namespace E_LearningPlatform.Infrastructure.Services
             var course = await _unitOfWork.Courses.GetByIdAsync(courseId);
             if (course == null)
                 throw new NotFoundException("Course not found.");
-            if (course.InstructorId != _currentUserService.UserId)
-                throw new ForbiddenException("You are not allowed to modify this course.");
+            await _courseAuthorizationService.EnsureInstructorOwnsCourseAsync(course.Id);
             _unitOfWork.Sections.Remove(section);
             var sectionsToUpdate = await _unitOfWork.Sections
                 .Query()
@@ -81,7 +83,7 @@ namespace E_LearningPlatform.Infrastructure.Services
             return;
         }
 
-        public async Task<SectionCreatedResponseDto> UpdateSectionAsync(int sectionId, AddSectionRequestDto request)
+        public async Task<SectionCreatedResponseDto> UpdateSectionAsync (int sectionId, AddSectionRequestDto request)
         {
             if (sectionId <= 0) throw new BadRequestException("Invalid section ID.");
             var section = await _unitOfWork.Sections.GetByIdAsync(sectionId);
@@ -103,14 +105,13 @@ namespace E_LearningPlatform.Infrastructure.Services
             return _mapper.Map<SectionCreatedResponseDto>(section);
         }
 
-        public async Task ReorderSectionsAsync(int courseId, List<int> sections)
+        public async Task ReorderSectionsAsync (int courseId, List<int> sections)
         {
             if (courseId <= 0) throw new BadRequestException("Invalid course ID.");
             var course = await _unitOfWork.Courses.GetByIdAsync(courseId);
             if (course == null)
                 throw new NotFoundException("Course not found.");
-            if (course.InstructorId != _currentUserService.UserId)
-                throw new ForbiddenException("You are not allowed to modify this course.");
+            await _courseAuthorizationService.EnsureInstructorOwnsCourseAsync(course.Id);
 
             //var sectionIds = sections.(s => s.SectionId).ToHashSet();
             var sectionIds = await _unitOfWork.Sections
@@ -136,6 +137,35 @@ namespace E_LearningPlatform.Infrastructure.Services
             }
 
             await _unitOfWork.SaveChangesAsync();
+        }
+
+        public async Task<SectionResponseDto> GetSectionByIdAsync (int sectionId)
+        {
+            var section = await _unitOfWork.Sections.GetByIdAsync(sectionId);
+            if (section == null)
+                throw new NotFoundException("Section not found.");
+            return _mapper.Map<SectionResponseDto>(section);
+        }
+
+        public async Task<PagedResult<SectionResponseDto>> GetSectionsByCourseIdAsync (int courseId, int pageNumber, int pageSize, CancellationToken cancellationToken)
+        {
+            var skip = (pageNumber - 1) * pageSize;
+            var totalCount = await _unitOfWork.Sections.Query().Where(s => s.CourseId == courseId).CountAsync(cancellationToken);
+            if (totalCount == 0)
+                throw new NotFoundException("No sections found for the specified course.");
+            if (skip >= totalCount)
+                skip = 0; // Reset skip to 0 if it exceeds total count to return the first page
+            var sections = await _unitOfWork.Sections.GetAllAsync(s => s.CourseId == courseId, skip, pageSize, cancellationToken);
+            if (sections == null || sections.Count == 0)
+                throw new NotFoundException("No sections found for the specified course.");
+
+            return new PagedResult<SectionResponseDto>
+            {
+                Items = _mapper.Map<List<SectionResponseDto>>(sections),
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
         }
     }
 }

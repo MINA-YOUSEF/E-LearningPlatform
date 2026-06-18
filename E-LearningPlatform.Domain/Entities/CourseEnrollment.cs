@@ -1,4 +1,5 @@
 ﻿using System;
+using E_LearningPlatform.Domain.DomainEvent;
 using E_LearningPlatform.Domain.Enums;
 using E_LearningPlatform.Domain.ValueObjects;
 
@@ -6,9 +7,9 @@ namespace E_LearningPlatform.Domain.Entities
 {
     public class CourseEnrollment : BaseEntity
     {
-        private CourseEnrollment() { }
+        private CourseEnrollment () { }
 
-        public CourseEnrollment(int courseId, int userId, Money price)
+        public CourseEnrollment (int courseId, int userId, Money price)
         {
             CourseId = courseId;
             UserId = userId;
@@ -28,15 +29,23 @@ namespace E_LearningPlatform.Domain.Entities
         public decimal ProgressPercent { get; private set; }
         public DateTime? ExpiresAt { get; private set; }
         public DateTime? LastAccessedAt { get; private set; }
+        public void Deactivate ()
+        {
+            IsActive = false;
 
-        public void UpdateProgress(decimal percent)
+            Status = EnrollmentStatus.Cancelled;
+
+            LastAccessedAt = DateTime.UtcNow;
+        }
+        public void UpdateProgress (decimal percent)
         {
             if (percent < 0 || percent > 100) throw new ArgumentOutOfRangeException(nameof(percent));
             ProgressPercent = percent;
-            if (percent >= 100)
+            if (percent >= 100 && !IsCompleted)
             {
                 IsCompleted = true;
                 Status = EnrollmentStatus.Completed;
+                AddDomainEvent(new CourseCompletedEvent(UserId, CourseId, Course.Title));
             }
             LastAccessedAt = DateTime.UtcNow;
         }

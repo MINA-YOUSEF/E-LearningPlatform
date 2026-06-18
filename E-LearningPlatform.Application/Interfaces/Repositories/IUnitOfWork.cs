@@ -1,4 +1,6 @@
 ﻿using E_LearningPlatform.Domain.Entities;
+using E_LearningPlatform.Domain.Entities.E_LearningPlatform.Domain.Entities;
+using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -17,10 +19,20 @@ namespace E_LearningPlatform.Application.Interfaces.Repositories
         IGenericRepository<Lesson> Lessons { get; }
         IGenericRepository<Review> Reviews { get; }
         IGenericRepository<WishList> WishLists { get; }
+        IGenericRepository<LessonProgress> LessonsProgress { get; }
+        IGenericRepository<CourseEnrollment> CourseEnrollment { get; }
         IGenericRepository<Notification> Notifications { get; }
         IGenericRepository<Message> Messages { get; }
         IGenericRepository<Media> Media { get; }
-        Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+        IGenericRepository<AuditLog> AuditLogs { get; }
+        IGenericRepository<Certificate> Certificates { get; }
+        IGenericRepository<WishListCourses> WishListCourses { get; }
+        IGenericRepository<Cart> Carts { get; }
+        IGenericRepository<CartItem> CartItems { get; }
+        IGenericRepository<Refund> Refunds { get; }
+        IGenericRepository<Conversation> Conversations { get; }
+        IGenericRepository<OnlineUser> OnlineUsers { get; }
+        Task<int> SaveChangesAsync (CancellationToken cancellationToken = default);
 
     }
 }

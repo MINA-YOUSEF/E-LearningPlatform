@@ -6,11 +6,16 @@ namespace E_LearningPlatform.Domain.Entities
     {
         private OrderItem() { }
 
-        public OrderItem(int orderId, int courseId, decimal price ,string currency)
+        public OrderItem( 
+            int courseId,
+            string courseTitle,
+            string courseSlug,
+            Money price)
         {
-            OrderId = orderId;
-            CourseId = courseId;
-            Price = new Money(price,currency);
+             CourseId = courseId;
+            CourseTitle = courseTitle;
+            CourseSlug = courseSlug;
+            Price = new Money(price.Amount, price.Currency);
         }
 
         public int OrderId { get; private set; }
@@ -18,6 +23,8 @@ namespace E_LearningPlatform.Domain.Entities
         public int CourseId { get; private set; }
         public Course Course { get; private set; } = null!;
         public Money Price { get; private set; }
+        public string CourseTitle { get; private set; }
+        public string CourseSlug { get; private set; }
 
     }
 }

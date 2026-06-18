@@ -1,4 +1,5 @@
 using E_LearningPlatform.Domain.Entities;
+using E_LearningPlatform.Domain.Entities.E_LearningPlatform.Domain.Entities;
 using E_LearningPlatform.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -7,7 +8,7 @@ namespace E_LearningPlatform.Infrastructure.Data.Configurations
 {
     public class ConversationConfiguration : IEntityTypeConfiguration<Conversation>
     {
-        public void Configure(EntityTypeBuilder<Conversation> builder)
+        public void Configure (EntityTypeBuilder<Conversation> builder)
         {
             builder.HasIndex(c => new { c.CourseId, c.StudentId, c.InstructorId }).IsUnique();
 

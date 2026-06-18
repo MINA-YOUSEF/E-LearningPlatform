@@ -16,17 +16,17 @@ namespace E_LearningPlatform.Infrastructure.Services
     public class JwtTokenService : IJwtTokenService
     {
         private readonly JwtOptions _options;
-        public JwtTokenService(IOptions<JwtOptions> options)
+        public JwtTokenService (IOptions<JwtOptions> options)
         {
             _options = options.Value;
         }
-        public string GenerateRefreshToken()
+        public string GenerateRefreshToken ()
         {
             var bytes = RandomNumberGenerator.GetBytes(64);
             return Convert.ToBase64String(bytes);
         }
 
-        public string GenerateToken(int userId,
+        public string GenerateToken (int userId,
             string email,
             string role,
             bool MustChangePassword,
@@ -60,11 +60,12 @@ namespace E_LearningPlatform.Infrastructure.Services
                 issuer: _options.Issuer,
                 audience: _options.Audience,
                 expires: GetAccessTokenExpiryUtc());
+
             return new JwtSecurityTokenHandler().WriteToken(token);
 
         }
 
-        public DateTime GetAccessTokenExpiryUtc()
+        public DateTime GetAccessTokenExpiryUtc ()
         {
             return DateTime.UtcNow.AddMinutes(_options.AccessTokenMinutes);
         }

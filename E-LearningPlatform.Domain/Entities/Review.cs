@@ -25,7 +25,15 @@ namespace E_LearningPlatform.Domain.Entities
         public string? Title { get; private set; }
         public DateTime CreatedAtUtc { get; private set; }
         public int HelpfulCount { get; private set; }
-
+        public void Update(
+    Rating rating,
+    string comment,
+    string? title)
+        {
+            Rating = rating.Value;
+            Comment = comment;
+            Title = title;
+        }
         public void MarkHelpful() => HelpfulCount++;
     }
 }

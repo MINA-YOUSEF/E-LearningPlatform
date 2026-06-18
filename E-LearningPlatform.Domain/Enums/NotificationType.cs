@@ -7,6 +7,18 @@
         NewLesson,
         CertificateIssued,
         NewReview,
-        CouponCreated
+        CouponCreated,
+        Payment,
+        CourseCompletion,
+        Review,
+        System,
+        CourseApproved,
+        CourseRejected,
+        CourseUpdated,
+        InstructorApplicationApproved,
+        InstructorApplicationRejected,
+        RefundApproved,
+        RefundRejected
     }
 }
+

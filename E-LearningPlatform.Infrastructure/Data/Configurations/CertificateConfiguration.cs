@@ -18,7 +18,7 @@ namespace E_LearningPlatform.Infrastructure.Data.Configurations
                 .HasForeignKey(c => c.CourseId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            builder.HasOne(c => c.FileUrl)
+            builder.HasOne(c => c.CertificateFile)
                 .WithMany()
                 .HasForeignKey(c => c.MediaId)
                 .OnDelete(DeleteBehavior.Restrict);

@@ -2114,7 +2114,7 @@ namespace E_LearningPlatform.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("E_LearningPlatform.Domain.Entities.Media", "FileUrl")
+                    b.HasOne("E_LearningPlatform.Domain.Entities.Media", "CertificateFile")
                         .WithMany()
                         .HasForeignKey("MediaId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -2128,7 +2128,7 @@ namespace E_LearningPlatform.Infrastructure.Migrations
 
                     b.Navigation("Course");
 
-                    b.Navigation("FileUrl");
+                    b.Navigation("CertificateFile");
                 });
 
             modelBuilder.Entity("E_LearningPlatform.Domain.Entities.Comment", b =>

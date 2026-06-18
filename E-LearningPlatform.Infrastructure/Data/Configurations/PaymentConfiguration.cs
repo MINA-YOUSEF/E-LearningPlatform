@@ -30,10 +30,10 @@ namespace E_LearningPlatform.Infrastructure.Data.Configurations
                 .HasForeignKey(p => p.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            builder.HasMany(p => p.Items)
-                .WithOne(i => i.Payment)
-                .HasForeignKey(i => i.PaymentId)
-                .OnDelete(DeleteBehavior.Cascade);
+            //builder.HasMany(p => p.Items)
+            //    .WithOne(i => i.Payment)
+            //    .HasForeignKey(i => i.PaymentId)
+            //    .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

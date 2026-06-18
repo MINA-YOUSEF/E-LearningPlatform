@@ -5,9 +5,9 @@ namespace E_LearningPlatform.Domain.Entities
 {
     public class Notification : BaseEntity
     {
-        private Notification() { }
+        private Notification () { }
 
-        public Notification(int recipientUserId, string title, string message, NotificationType type)
+        public Notification (int recipientUserId, string title, string message, NotificationType type)
         {
             RecipientUserId = recipientUserId;
             Title = title;
@@ -24,8 +24,8 @@ namespace E_LearningPlatform.Domain.Entities
         public DateTime? DeliveredAt { get; private set; }
         public string? ReferenceId { get; private set; }
 
-        public void MarkDelivered() => DeliveredAt = DateTime.UtcNow;
-        public void MarkRead()
+        public void MarkDelivered () => DeliveredAt = DateTime.UtcNow;
+        public void MarkRead ()
         {
             IsRead = true;
             ReadAt = DateTime.UtcNow;

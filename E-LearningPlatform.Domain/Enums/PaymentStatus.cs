@@ -5,7 +5,8 @@
         Pending,
         Paid,
         Failed,
-        Refunded
+        Refunded,
+        Cancelled
 
     }
 }

@@ -9,6 +9,7 @@ using E_LearningPlatform.Infrastructure.Options;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Org.BouncyCastle.Utilities;
 using System.Security.Cryptography;
@@ -24,13 +25,15 @@ namespace E_LearningPlatform.Infrastructure.Services
         private readonly FrontendOptions _frontOptions;
         private readonly JwtOptions _jwtOptions;
         private readonly UserManager<AppUser> _userManager;
+        private readonly ILogger<AuthService> _logger;
 
-        public AuthService(IJwtTokenService tokenService,
+        public AuthService (IJwtTokenService tokenService,
             IEmailService emailService,
             IUnitOfWork unitOfWork,
             IOptions<FrontendOptions> frontOptions,
             IOptions<JwtOptions> jwtOptions,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            ILogger<AuthService> logger)
         {
             _tokenService = tokenService;
             _emailService = emailService;
@@ -38,11 +41,12 @@ namespace E_LearningPlatform.Infrastructure.Services
             _frontOptions = frontOptions.Value;
             _jwtOptions = jwtOptions.Value;
             _userManager = userManager;
+            _logger = logger;
         }
 
 
 
-        public async Task<RegisterResponseDto> RegisterAsync(RegisterRequestDto request, CancellationToken cancellationToken = default)
+        public async Task<RegisterResponseDto> RegisterAsync (RegisterRequestDto request, CancellationToken cancellationToken = default)
         {
             var existingUser = await _userManager.FindByEmailAsync(request.Email);
             if (existingUser != null)
@@ -99,7 +103,7 @@ namespace E_LearningPlatform.Infrastructure.Services
             };
 
         }
-        public async Task<AuthResponseDto> ConfirmationEmailAsync(ConfirmationEmailRequestDto request, CancellationToken cancellationToken = default)
+        public async Task<AuthResponseDto> ConfirmationEmailAsync (ConfirmationEmailRequestDto request, CancellationToken cancellationToken = default)
         {
             var decodedBytes = WebEncoders.Base64UrlDecode(request.Token);
             var decodedToken = Encoding.UTF8.GetString(decodedBytes);
@@ -116,12 +120,14 @@ namespace E_LearningPlatform.Infrastructure.Services
             }
 
             var roles = await _userManager.GetRolesAsync(user);
-
+            _logger.LogInformation(
+    "New user registered {Email}",
+    request.Email);
             return await BuildAuthResponseAsync(user, roles[0], cancellationToken);
 
         }
 
-        public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default)
+        public async Task<AuthResponseDto> LoginAsync (LoginRequestDto request, CancellationToken cancellationToken = default)
         {
             var user = await _userManager.FindByEmailAsync(request.Email);
             if (user == null)
@@ -151,9 +157,12 @@ namespace E_LearningPlatform.Infrastructure.Services
                     RequiresPasswordChange = true
                 };
             }
+            _logger.LogInformation(
+    "User {Email} logged in",
+    request.Email);
             return await BuildAuthResponseAsync(user, roles[0], cancellationToken);
         }
-        private async Task<AuthResponseDto> BuildAuthResponseAsync(
+        private async Task<AuthResponseDto> BuildAuthResponseAsync (
               AppUser user,
               string role,
               CancellationToken cancellationToken)
@@ -188,14 +197,14 @@ namespace E_LearningPlatform.Infrastructure.Services
         }
 
 
-        private static string HashToken(string token)
+        private static string HashToken (string token)
         {
             var bytes = Encoding.UTF8.GetBytes(token);
             var hash = SHA256.HashData(bytes);
             return Convert.ToHexString(hash);
         }
 
-        public async Task<AuthResponseDto> RefreshTokenAsync(RefreshTokenRequestDto request, CancellationToken cancellationToken = default)
+        public async Task<AuthResponseDto> RefreshTokenAsync (RefreshTokenRequestDto request, CancellationToken cancellationToken = default)
         {
             var tokenHash = HashToken(request.RefreshToken);
             var stordToken = await _unitOfWork.RefreshTokens.Query()
@@ -217,7 +226,7 @@ namespace E_LearningPlatform.Infrastructure.Services
 
         }
 
-        public async Task<RegisterResponseDto> ResendConfirmationEmailAsync(ResendConfirmationRequestDto request, CancellationToken cancellationToken = default)
+        public async Task<RegisterResponseDto> ResendConfirmationEmailAsync (ResendConfirmationRequestDto request, CancellationToken cancellationToken = default)
         {
             var user = await _userManager.FindByEmailAsync(request.Email);
             if (user == null)

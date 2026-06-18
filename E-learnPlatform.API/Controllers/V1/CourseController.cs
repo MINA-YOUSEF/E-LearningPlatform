@@ -1,11 +1,10 @@
-﻿using E_LearningPlatform.Application.DTOs.Course;
+﻿using E_LearningPlatform.Application.Common;
+using E_LearningPlatform.Application.DTOs.Course;
 using E_LearningPlatform.Application.Interfaces.Services;
 using E_LearningPlatform.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
-
+ using Microsoft.AspNetCore.Mvc;
+ 
 namespace E_learnPlatform.API.Controllers.V1
 {
     public class CourseController : BaseV1Controller
@@ -29,6 +28,14 @@ namespace E_learnPlatform.API.Controllers.V1
             var result = await _courseService.GetCourseByIdAsync(courseId);
             return Ok(result);
         }
+        [Authorize(policy: Policies.FullAccess)]
+        [HttpGet("all")]
+        public async Task<ActionResult> GetAllCourses([FromQuery] PagedRequest pagedRequest, CancellationToken cancellationToken)
+        {
+            var result = await _courseService.GetCoursesAsync(pagedRequest.PageNumber, pagedRequest.PageSize, cancellationToken);
+            return Ok(result);
+        }
+
         [Authorize(policy: Policies.InstructorFullAccess)]
         [HttpPut("{courseId}")]
         public async Task<ActionResult> UpdateCourse(int courseId, [FromForm] AddCourseRequestDto requestDto)
@@ -38,4 +45,5 @@ namespace E_learnPlatform.API.Controllers.V1
 
         }
     }
+
 }

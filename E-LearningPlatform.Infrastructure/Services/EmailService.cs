@@ -2,9 +2,6 @@
 using E_LearningPlatform.Infrastructure.Options;
 using Microsoft.Extensions.Options;
 using MimeKit;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace E_LearningPlatform.Infrastructure.Services
 {

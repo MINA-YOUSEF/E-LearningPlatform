@@ -1,19 +1,23 @@
-using Companion.Application.Extensions;
+using E_LearningPlatform.Application.Extensions;
+using E_LearningPlatform.Application.Interfaces.Jobs.CleanUp;
+using E_LearningPlatform.Application.Interfaces.Outbox;
 using E_LearningPlatform.Infrastructure.Extensions;
+using E_LearningPlatform.Infrastructure.Hubs;
 using E_LearningPlatform.Infrastructure.Options;
 using E_LearningPlatform.Infrastructure.Seed;
 using E_learnPlatform.API.Extensions;
 using E_learnPlatform.API.Middleware;
+using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 using System.Text;
 
 namespace E_learnPlatform.API
 {
     public class Program
     {
-        public static async Task Main(string[] args)
+        public static async Task Main (string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
             //builder.Services.
@@ -45,23 +49,87 @@ namespace E_learnPlatform.API
                     ClockSkew = TimeSpan.FromMinutes(1)
 
                 };
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken =
+                            context.Request.Query["access_token"];
+
+                        var path =
+                            context.HttpContext.Request.Path;
+
+                        if (!string.IsNullOrEmpty(accessToken)
+                            &&
+                            path.StartsWithSegments(
+                                "/hubs/notifications"))
+                        {
+                            context.Token = accessToken;
+                        }
+
+                        return Task.CompletedTask;
+                    }
+                };
+
+            });
+            builder.Services.AddHangfire(config =>
+
+            {
+                config.UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection"));
+
+            });
+            builder.Services.AddHangfireServer();
+
+            builder.Services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = builder.Configuration.GetConnectionString("Redis");
+            });
+            builder.Host.UseSerilog((context, config) =>
+            {
+                config.ReadFrom.Configuration(context.Configuration);
+
 
             });
             builder.Services.AddMyAuthorization();
 
             var app = builder.Build();
+            using (var scope = app.Services.CreateScope())
+            {
+                var recurringJobManager =
+                    scope.ServiceProvider
+                        .GetRequiredService<
+                            IRecurringJobManager>();
+
+                recurringJobManager.AddOrUpdate<
+                    INotificationsCleanUpJob>(
+                        "NotificationsCleanup",
+                        x => x.ExecuteAsync(),
+                        Cron.Daily);
+
+                recurringJobManager.AddOrUpdate<
+                    IOutboxProcessor>(
+                        "outbox",
+                        x => x.ProcessAsync(),
+                        Cron.Minutely);
+            }
 
             app.UseMiddleware<GlobalExceptionMiddleware>();
 
-            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
+                app.UseDeveloperExceptionPage();
                 app.MapOpenApi();
+                app.UseHangfireDashboard("/hangfire");
             }
 
             app.UseHttpsRedirection();
             app.UseAuthentication();
             app.UseAuthorization();
+            app.MapHub<NotificationHub>("/hubs/notifications");
+
+
+            app.MapHub<ChatHub>(
+                "/hubs/chat");
             app.UseSwagger();
             app.UseSwaggerUI();
 
